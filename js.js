@@ -40,6 +40,7 @@ class Cell_DOM_Link {
       selected.update_value();
       this.update_value();
       this.clear_selection();
+      this.board.merge_matches();
       return;
     }
 
@@ -102,7 +103,57 @@ class Board {
     this.cells.flat().forEach((cell) => cell.activate_cell_dom_link(this));
     this.dom_link = new Board_DOM_Link(this.info.l, this.info.w, this.cells);
   }
-  
+
+  find_matches() {
+    const matches = new Set();
+    const mark_runs = (line) => {
+      let start = 0;
+      while (start < line.length) {
+        let end = start + 1;
+        while (end < line.length && line[end].value === line[start].value) {
+          end++;
+        }
+        if (end - start >= 3) {
+          for (let index = start; index < end; index++) {
+            matches.add(line[index]);
+          }
+        }
+        start = end;
+      }
+    };
+
+    this.cells.forEach(mark_runs);
+    for (let column = 0; column < this.info.w; column++) {
+      mark_runs(this.cells.map((row) => row[column]));
+    }
+    return matches;
+  }
+
+  merge_matches() {
+    const matches = this.find_matches();
+    if (matches.size === 0) return 0;
+
+    for (let column = 0; column < this.info.w; column++) {
+      const survivors = this.cells
+        .map((row) => row[column])
+        .filter((cell) => !matches.has(cell));
+      const replacements = Array.from(
+        { length: this.info.l - survivors.length },
+        () => {
+          const cell = new Cell(Math.floor(Math.random() * 10 + 10), false);
+          cell.activate_cell_dom_link(this);
+          return cell;
+        },
+      );
+      const updated_column = [...replacements, ...survivors];
+      updated_column.forEach((cell, row) => {
+        this.cells[row][column] = cell;
+      });
+    }
+
+    this.dom_link.update();
+    return matches.size;
+  }
 }
 class Board_DOM_Link {
   constructor(l, w, cells) {
@@ -125,17 +176,15 @@ class Board_DOM_Link {
   }
 
   rem_current_cell_array() {
-    this.cells.forEach((element) => {
-      element.CDM.add_to(null);
-    });
+    this.dom_element.replaceChildren();
   }
   adjust_css() {
-    this.dom_element.style.gridTemplateColumns = `repeat(${this.length}, 1fr)`;
-    this.dom_element.style.gridTemplateRows = `repeat(${this.width}, 1fr)`;
+    this.dom_element.style.gridTemplateColumns = `repeat(${this.width}, 1fr)`;
+    this.dom_element.style.gridTemplateRows = `repeat(${this.length}, 1fr)`;
   }
-    update() {
-        //todo: Move cells to their positions based on what changed in the board;
-        
+  update() {
+    this.rem_current_cell_array();
+    this.add_current_cell_array();
   }
 }
 var b = new Board(new BoardInfo(3, 12, null));
