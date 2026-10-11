@@ -4,6 +4,14 @@
     min-height: 1vmin;
     background: url("extra/image.png");
     background-repeat:round;
+    cursor: pointer;
+}
+.cell.selected{
+    outline: 3px solid var(--turquoise);
+    outline-offset: -3px;
+}
+.cell.swappable{
+    filter: brightness(1.35);
 }
  #game, #scores-goals{
     display: inline-block; /*to change in the future*/

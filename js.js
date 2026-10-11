@@ -6,20 +6,76 @@ class Cell {
     Cell.UniqueID++;
     if (activate_dom_link) this.activate_cell_dom_link();
   }
-  activate_cell_dom_link() {
-    this.cell_dom_link = new Cell_DOM_Link(this.uid);
+  activate_cell_dom_link(board = null) {
+    this.cell_dom_link = new Cell_DOM_Link(this, board);
   }
 }
 class Cell_DOM_Link {
-  constructor(UniqueID) {
+  constructor(cell, board = null) {
+    this.cell = cell;
+    this.board = board;
     this.dom_element = document.createElement("div");
     this.dom_element.classList.add("cell");
-      this.dom_element.id = `cell-${UniqueID}`;
-      this.dom_element.onclick = this.onclick;
+    this.dom_element.id = `cell-${cell.uid}`;
+    this.dom_element.addEventListener("click", () => this.onclick());
   }
-    onclick(...a) {
-        alert(JSON.stringify(a));
+
+  onclick() {
+    if (!this.board) return;
+
+    const selected = this.board.selectedCellDomLink;
+    if (!selected) {
+      this.select();
+      return;
     }
+    if (selected === this) {
+      this.clear_selection();
+      return;
+    }
+
+    const [selectedRow, selectedColumn] = selected.position();
+    const [row, column] = this.position();
+    if (Math.abs(selectedRow - row) + Math.abs(selectedColumn - column) === 1) {
+      [selected.cell.value, this.cell.value] = [this.cell.value, selected.cell.value];
+      selected.update_value();
+      this.update_value();
+      this.clear_selection();
+      return;
+    }
+
+    this.clear_selection();
+    this.select();
+  }
+
+  position() {
+    const row = this.board.cells.findIndex((cells) => cells.includes(this.cell));
+    return [row, this.board.cells[row].indexOf(this.cell)];
+  }
+
+  select() {
+    this.board.selectedCellDomLink = this;
+    this.dom_element.classList.add("selected");
+    const [row, column] = this.position();
+    this.board.cells.forEach((cells, rowIndex) => {
+      cells.forEach((cell, columnIndex) => {
+        if (Math.abs(row - rowIndex) + Math.abs(column - columnIndex) === 1) {
+          cell.cell_dom_link.dom_element.classList.add("swappable");
+        }
+      });
+    });
+  }
+
+  clear_selection() {
+    this.board.selectedCellDomLink = null;
+    this.board.cells.flat().forEach((cell) => {
+      cell.cell_dom_link.dom_element.classList.remove("selected", "swappable");
+    });
+  }
+
+  update_value() {
+    this.dom_element.innerHTML = `${this.cell.value}`;
+  }
+
   add_to(el) {
     el.appendChild(this.dom_element);
   }
@@ -43,6 +99,7 @@ class Board {
       ); // to be changed later
     }
   activate_board_dom_link() {
+    this.cells.flat().forEach((cell) => cell.activate_cell_dom_link(this));
     this.dom_link = new Board_DOM_Link(this.info.l, this.info.w, this.cells);
   }
   
@@ -61,9 +118,8 @@ class Board_DOM_Link {
   add_current_cell_array() {
     this.cells.forEach((elementP) => {
       elementP.forEach((element) => {
-        //   console.log(element, this.dom_element);
         element.cell_dom_link.add_to(this.dom_element);
-        element.cell_dom_link.dom_element.innerHTML = `${element.value}`;
+        element.cell_dom_link.update_value();
       });
     });
   }
