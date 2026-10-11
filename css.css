@@ -1,0 +1,18 @@
+.cell{
+    transition: cubic-bezier(0.215, 0.610, 0.355, 1) 0.3s;
+    min-width: 1vmin;
+    min-height: 1vmin;
+    background: url("extra/image.png");
+    background-repeat:round;
+}
+ #game, #scores-goals{
+    display: inline-block; /*to change in the future*/
+    background-color: var(--blue-slate);
+    min-width: 1vmin;
+    min-height: 1vmin;
+}
+#board{
+    display: grid;
+    padding: 5px;
+
+}
